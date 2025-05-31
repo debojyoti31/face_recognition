@@ -1,4 +1,5 @@
 streamlit
+streamlit-webrtc
 opencv-python
 insightface
 onnxruntime
@@ -7,4 +8,3 @@ pillow
 numpy
 scikit-learn
 watchdog
-

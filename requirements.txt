@@ -1,9 +1,10 @@
 streamlit
-streamlit-webrtc
 opencv-python
 insightface==0.7.3
 onnxruntime
 faiss-cpu
-numpy
 pillow
+numpy
+scikit-learn
 watchdog
+

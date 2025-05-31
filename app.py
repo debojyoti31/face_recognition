@@ -1,68 +1,71 @@
 # app.py
 
 import streamlit as st
-import numpy as np
 import cv2
+import numpy as np
 import os
-
-from streamlit_webrtc import webrtc_streamer, VideoProcessorBase
 
 from face_engine.face_model import FaceModel
 from face_engine.matcher import FaceMatcher
 from face_engine.db import FaceDB
 from watcher.auto_enroll import AutoEnroller
 
-# 🧠 Auto-enroll faces at startup
+# 🔁 Run auto-enrollment once at startup
 AutoEnroller().enroll_once()
 
 st.set_page_config(page_title="Face Recognition", layout="centered")
-st.title("🧠 Face Recognition (WebRTC + Auto-Enroll)")
 
-# Models
 model = FaceModel()
 matcher = FaceMatcher()
 db = FaceDB()
 
-# Sidebar
-st.sidebar.write(f"🧬 Enrolled Faces: {matcher.index.ntotal}")
-threshold = st.sidebar.slider("Recognition Threshold", 0.1, 1.5, 0.6, 0.05)
+st.title("🧠 Face Recognition (Real-Time)")
+
+# Debug info in sidebar
+st.sidebar.write(f"Enrolled faces: {matcher.index.ntotal}")
+threshold = st.sidebar.slider("Recognition Threshold", 0.1, 1.0, 0.6, 0.05)
 
 # ----------------------------
-# WebRTC Face Recognition
+# Live Webcam Recognition
 # ----------------------------
+st.subheader("📷 Live Webcam")
+run_webcam = st.checkbox("Start Webcam")
 
-class FaceRecognitionProcessor(VideoProcessorBase):
-    def __init__(self) -> None:
-        self.model = model
-        self.matcher = matcher
-        self.threshold = threshold
+if run_webcam:
+    cap = cv2.VideoCapture(0)
+    FRAME_WINDOW = st.image([])
+    debug_info = st.empty()
 
-    def recv(self, frame):
-        img = frame.to_ndarray(format="bgr24")
-        embedding, bbox = self.model.get_face_embedding(img)
+    while run_webcam:
+        ret, frame = cap.read()
+        if not ret:
+            break
 
+        embedding, bbox = model.get_face_embedding(frame)
         if embedding is not None:
-            name, score = self.matcher.search(embedding)
-            if score is not None and score < self.threshold:
-                img = self.model.draw_bbox(img, bbox, name, score)
+            name, score = matcher.search(embedding)
+            
+            # Debug output
+            debug_text = f"Best match: {name}, Score: {score:.3f}, Threshold: {threshold}"
+            debug_info.text(debug_text)
+            
+            if score is not None and score < threshold:
+                frame = model.draw_bbox(frame, bbox, name, score)
             else:
-                img = self.model.draw_bbox(img, bbox, "Unknown", score)
-        return cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                frame = model.draw_bbox(frame, bbox, "Unknown", score)
+        else:
+            debug_info.text("No face detected")
 
-# WebRTC streamer
-webrtc_streamer(
-    key="facecam",
-    video_processor_factory=FaceRecognitionProcessor,
-    media_stream_constraints={"video": True, "audio": False},
-    async_processing=True,
-)
+        FRAME_WINDOW.image(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+
+    cap.release()
 
 # ----------------------------
-# Enrolled Face Preview
+# Enrolled Faces (View-Only)
 # ----------------------------
 st.subheader("🧑 Enrolled Faces")
-
 names = db.list_faces()
+
 if names:
     cols = st.columns(min(len(names), 4))
     for i, name in enumerate(names):

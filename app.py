@@ -19,17 +19,16 @@ model = FaceModel()
 matcher = FaceMatcher()
 db = FaceDB()
 
-st.title("🧠 Face Recognition (Real-Time)")
+st.title("Face Recognition (Real-Time)")
 
 # Debug info in sidebar
-st.sidebar.write(f"Enrolled faces: {matcher.index.ntotal}")
 threshold = st.sidebar.slider("Recognition Threshold", 0.1, 1.0, 0.6, 0.05)
 
 # ----------------------------
 # Live Webcam Recognition
 # ----------------------------
-st.subheader("📷 Live Webcam")
-run_webcam = st.checkbox("Start Webcam")
+st.subheader("Live Webcam")
+run_webcam = st.checkbox("Start Webcam 📷")
 
 if run_webcam:
     cap = cv2.VideoCapture(0)
@@ -50,9 +49,9 @@ if run_webcam:
             debug_info.text(debug_text)
             
             if score is not None and score < threshold:
-                frame = model.draw_bbox(frame, bbox, name, score)
+                frame = model.draw_bbox(frame, bbox, name, threshold, score)
             else:
-                frame = model.draw_bbox(frame, bbox, "Unknown", score)
+                frame = model.draw_bbox(frame, bbox, "Unknown", threshold, score)
         else:
             debug_info.text("No face detected")
 
@@ -63,7 +62,7 @@ if run_webcam:
 # ----------------------------
 # Enrolled Faces (View-Only)
 # ----------------------------
-st.subheader("🧑 Enrolled Faces")
+st.subheader("Enrolled Faces 🧑")
 names = db.list_faces()
 
 if names:

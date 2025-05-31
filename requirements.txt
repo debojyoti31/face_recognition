@@ -1,0 +1,10 @@
+streamlit
+opencv-python
+insightface
+onnxruntime
+faiss-cpu
+pillow
+numpy
+scikit-learn
+watchdog
+
